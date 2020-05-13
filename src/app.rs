@@ -105,13 +105,20 @@ impl Component for Model {
                     { for self.state.entries.iter().enumerate().map(|e| self.view_entry(e)) }
                     
                     // input line
-                    <input class="new-todo"
-                        placeholder="What needs to be done?"
-                        value=&self.state.value
-                        oninput=self.link.callback(|e: InputData| Msg::UpdateInput(e.value))
-                        onkeypress=self.link.callback(|e: KeyboardEvent| {
-                            if e.key() == "Enter" { Msg::Add } else { Msg::Nope }
-                        }) />
+                    <div class="input-line">
+                        <input
+                        type="checkbox"
+                        class="toggle hidden"
+                        />
+                        <input class="new-todo"
+                            placeholder="Add item"
+                            value=&self.state.value
+                            oninput=self.link.callback(|e: InputData| Msg::UpdateInput(e.value))
+                            onkeypress=self.link.callback(|e: KeyboardEvent| {
+                                if e.key() == "Enter" { Msg::Add } else { Msg::Nope }
+                            }) />
+                        <button class="destroy hidden" ></button>
+                    </div>
                 </section>
             </div>
         }
@@ -134,7 +141,7 @@ impl Model {
                     /*onkeypress=self.link.callback(move |e: KeyboardEvent| {
                         if e.key() == "Enter" { Msg::Edit(idx) } else { Msg::Nope }
                     })*/ />
-                <button class="destroy" onclick=self.link.callback(move |_| Msg::Remove(idx)) >{"x"}</button>
+                <button class="destroy" onclick=self.link.callback(move |_| Msg::Remove(idx)) ></button>
             </div>
         }
     }
