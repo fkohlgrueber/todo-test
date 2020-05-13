@@ -102,22 +102,27 @@ impl Component for Model {
                     
                     
                     // todo items
-                    { for self.state.entries.iter().enumerate().map(|e| self.view_entry(e)) }
-                    
+                    <div class="entries">
+                        { for self.state.entries.iter().enumerate().map(|e| self.view_entry(e)) }
+                    </div>
+
                     // input line
-                    <div class="input-line">
-                        <input
-                        type="checkbox"
-                        class="toggle hidden"
+                    <div class="entry input-entry">
+                        // the checkbox
+                        <span
+                            class="checkbox"
                         />
-                        <input class="new-todo"
+                        // description
+                        <input 
                             placeholder="Add item"
+                            class="desc"
+                            type="text"
                             value=&self.state.value
                             oninput=self.link.callback(|e: InputData| Msg::UpdateInput(e.value))
                             onkeypress=self.link.callback(|e: KeyboardEvent| {
                                 if e.key() == "Enter" { Msg::Add } else { Msg::Nope }
                             }) />
-                        <button class="destroy hidden" ></button>
+                        <span class="remove" >{"\u{00D7}"}</span>
                     </div>
                 </section>
             </div>
@@ -127,21 +132,30 @@ impl Component for Model {
 
 impl Model {
     fn view_entry(&self, (idx, entry): (usize, &Entry)) -> Html {
+        let mut chb_class = "checkbox ".to_string();
+        if entry.completed { 
+            chb_class.push_str("checked ") 
+        }
+        let mut entry_class = "entry ".to_string();
+        if entry.description.is_empty() {
+            entry_class.push_str("empty");
+        }
         html! {
-            <div class="view">
-                <input
-                    type="checkbox"
-                    class="toggle"
-                    checked=entry.completed
+            <div class=entry_class>
+                // the checkbox
+                <span
+                    class=chb_class
                     onclick=self.link.callback(move |_| Msg::Toggle(idx)) />
-                <input class="edit"
+                // description
+                <input 
+                    class="desc"
                     type="text"
                     value=&entry.description
                     oninput=self.link.callback(move |e: InputData| Msg::Update(idx, e.value))
                     /*onkeypress=self.link.callback(move |e: KeyboardEvent| {
                         if e.key() == "Enter" { Msg::Edit(idx) } else { Msg::Nope }
                     })*/ />
-                <button class="destroy" onclick=self.link.callback(move |_| Msg::Remove(idx)) ></button>
+                <span class="remove" onclick=self.link.callback(move |_| Msg::Remove(idx)) >{"\u{00D7}"}</span>
             </div>
         }
     }
