@@ -1,10 +1,8 @@
 use serde_derive::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, ToString};
 use yew::events::KeyboardEvent;
 use yew::format::Json;
 use yew::services::storage::{Area, StorageService};
-use yew::{html, Component, ComponentLink, Href, Html, InputData, ShouldRender};
+use yew::{html, Component, ComponentLink, Html, InputData, ShouldRender};
 
 const KEY: &str = "yew.todomvc.self";
 
@@ -17,7 +15,6 @@ pub struct Model {
 #[derive(Serialize, Deserialize)]
 pub struct State {
     entries: Vec<Entry>,
-    filter: Filter,
     value: String,
     edit_value: String,
 }
@@ -35,11 +32,8 @@ pub enum Msg {
     Update(String),
     UpdateEdit(String),
     Remove(usize),
-    SetFilter(Filter),
-    ToggleAll,
     ToggleEdit(usize),
     Toggle(usize),
-    ClearCompleted,
     Nope,
 }
 
@@ -58,7 +52,6 @@ impl Component for Model {
         };
         let state = State {
             entries,
-            filter: Filter::All,
             value: "".into(),
             edit_value: "".into(),
         };
@@ -96,22 +89,12 @@ impl Component for Model {
             Msg::Remove(idx) => {
                 self.state.remove(idx);
             }
-            Msg::SetFilter(filter) => {
-                self.state.filter = filter;
-            }
             Msg::ToggleEdit(idx) => {
                 self.state.edit_value = self.state.entries[idx].description.clone();
                 self.state.toggle_edit(idx);
             }
-            Msg::ToggleAll => {
-                let status = !self.state.is_all_completed();
-                self.state.toggle_all(status);
-            }
             Msg::Toggle(idx) => {
                 self.state.toggle(idx);
-            }
-            Msg::ClearCompleted => {
-                self.state.clear_completed();
             }
             Msg::Nope => {}
         }
@@ -129,59 +112,22 @@ impl Component for Model {
                 <section class="todoapp">
                     <header class="header">
                         <h1>{ "todos" }</h1>
-                        { self.view_input() }
                     </header>
                     <section class="main">
-                        <input
-                            type="checkbox"
-                            class="toggle-all"
-                            checked=self.state.is_all_completed()
-                            onclick=self.link.callback(|_| Msg::ToggleAll) />
                         <ul class="todo-list">
-                            { for self.state.entries.iter().filter(|e| self.state.filter.fit(e)).enumerate().map(|e| self.view_entry(e)) }
+                            { for self.state.entries.iter().enumerate().map(|e| self.view_entry(e)) }
                         </ul>
                     </section>
-                    <footer class="footer">
-                        <span class="todo-count">
-                            <strong>{ self.state.total() }</strong>
-                            { " item(s) left" }
-                        </span>
-                        <ul class="filters">
-                            { for Filter::iter().map(|flt| self.view_filter(flt)) }
-                        </ul>
-                        <button class="clear-completed" onclick=self.link.callback(|_| Msg::ClearCompleted)>
-                            { format!("Clear completed ({})", self.state.total_completed()) }
-                        </button>
-                    </footer>
+                    { self.view_input() }
                 </section>
-                <footer class="info">
-                    <p>{ "Double-click to edit a todo" }</p>
-                    <p>{ "Written by " }<a href="https://github.com/DenisKolodin/" target="_blank">{ "Denis Kolodin" }</a></p>
-                    <p>{ "Part of " }<a href="http://todomvc.com/" target="_blank">{ "TodoMVC" }</a></p>
-                </footer>
             </div>
         }
     }
 }
 
 impl Model {
-    fn view_filter(&self, filter: Filter) -> Html {
-        let flt = filter.clone();
-        html! {
-            <li>
-                <a class=if self.state.filter == flt { "selected" } else { "not-selected" }
-                   href=&flt
-                   onclick=self.link.callback(move |_| Msg::SetFilter(flt.clone()))>
-                    { filter }
-                </a>
-            </li>
-        }
-    }
-
     fn view_input(&self) -> Html {
         html! {
-            // You can use standard Rust comments. One line:
-            // <li></li>
             <input class="new-todo"
                    placeholder="What needs to be done?"
                    value=&self.state.value
@@ -189,11 +135,6 @@ impl Model {
                    onkeypress=self.link.callback(|e: KeyboardEvent| {
                        if e.key() == "Enter" { Msg::Add } else { Msg::Nope }
                    }) />
-            /* Or multiline:
-            <ul>
-                <li></li>
-            </ul>
-            */
         }
     }
 
@@ -239,104 +180,29 @@ impl Model {
     }
 }
 
-#[derive(EnumIter, ToString, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Filter {
-    All,
-    Active,
-    Completed,
-}
-
-impl<'a> Into<Href> for &'a Filter {
-    fn into(self) -> Href {
-        match *self {
-            Filter::All => "#/".into(),
-            Filter::Active => "#/active".into(),
-            Filter::Completed => "#/completed".into(),
-        }
-    }
-}
-
-impl Filter {
-    fn fit(&self, entry: &Entry) -> bool {
-        match *self {
-            Filter::All => true,
-            Filter::Active => !entry.completed,
-            Filter::Completed => entry.completed,
-        }
-    }
-}
-
 impl State {
-    fn total(&self) -> usize {
-        self.entries.len()
-    }
-
-    fn total_completed(&self) -> usize {
-        self.entries
-            .iter()
-            .filter(|e| Filter::Completed.fit(e))
-            .count()
-    }
-
-    fn is_all_completed(&self) -> bool {
-        let mut filtered_iter = self
-            .entries
-            .iter()
-            .filter(|e| self.filter.fit(e))
-            .peekable();
-
-        if filtered_iter.peek().is_none() {
-            return false;
-        }
-
-        filtered_iter.all(|e| e.completed)
-    }
-
-    fn toggle_all(&mut self, value: bool) {
-        for entry in self.entries.iter_mut() {
-            if self.filter.fit(entry) {
-                entry.completed = value;
-            }
-        }
-    }
-
-    fn clear_completed(&mut self) {
-        let entries = self
-            .entries
-            .drain(..)
-            .filter(|e| Filter::Active.fit(e))
-            .collect();
-        self.entries = entries;
-    }
-
     fn toggle(&mut self, idx: usize) {
-        let filter = self.filter.clone();
         let mut entries = self
             .entries
             .iter_mut()
-            .filter(|e| filter.fit(e))
             .collect::<Vec<_>>();
         let entry = entries.get_mut(idx).unwrap();
         entry.completed = !entry.completed;
     }
 
     fn toggle_edit(&mut self, idx: usize) {
-        let filter = self.filter.clone();
         let mut entries = self
             .entries
             .iter_mut()
-            .filter(|e| filter.fit(e))
             .collect::<Vec<_>>();
         let entry = entries.get_mut(idx).unwrap();
         entry.editing = !entry.editing;
     }
 
     fn complete_edit(&mut self, idx: usize, val: String) {
-        let filter = self.filter.clone();
         let mut entries = self
             .entries
             .iter_mut()
-            .filter(|e| filter.fit(e))
             .collect::<Vec<_>>();
         let entry = entries.get_mut(idx).unwrap();
         entry.description = val;
@@ -345,12 +211,10 @@ impl State {
 
     fn remove(&mut self, idx: usize) {
         let idx = {
-            let filter = self.filter.clone();
             let entries = self
                 .entries
                 .iter()
                 .enumerate()
-                .filter(|&(_, e)| filter.fit(e))
                 .collect::<Vec<_>>();
             let &(idx, _) = entries.get(idx).unwrap();
             idx
