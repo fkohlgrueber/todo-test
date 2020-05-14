@@ -508,7 +508,7 @@
     }
 
     async function main() {
-       await init('/pkg/todomvc_bg.wasm');
+       await init('./pkg/todomvc_bg.wasm');
        run_app();
     }
     main();
