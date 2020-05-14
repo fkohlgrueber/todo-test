@@ -6,6 +6,34 @@
         <title>Yew • TodoMVC</title>
         <link rel="stylesheet" href="./style.css" />
         <script src="./pkg/bundle.js" defer></script>
+        <script>
+            var cacheName = 'todo-pwa';
+            var filesToCache = [
+            '/',
+            '/index.html',
+            '/style.css',
+            '/pkg/bundle.js',
+            '/pkg/todomvc_bg.wasm'
+            ];
+
+            /* Start the service worker and cache all of the app's content */
+            self.addEventListener('install', function(e) {
+            e.waitUntil(
+                caches.open(cacheName).then(function(cache) {
+                return cache.addAll(filesToCache);
+                })
+            );
+            });
+
+            /* Serve cached content when offline */
+            self.addEventListener('fetch', function(e) {
+            e.respondWith(
+                caches.match(e.request).then(function(response) {
+                return response || fetch(e.request);
+                })
+            );
+            });
+        </script>
     </head>
     <body>
     </body>
