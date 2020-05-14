@@ -1,0 +1,15 @@
+{
+  "name": "todomvc",
+  "collaborators": [
+    "Denis Kolodin <deniskolodin@gmail.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "todomvc_bg.wasm",
+    "todomvc.js",
+    "todomvc.d.ts"
+  ],
+  "module": "todomvc.js",
+  "types": "todomvc.d.ts",
+  "sideEffects": false
+}
